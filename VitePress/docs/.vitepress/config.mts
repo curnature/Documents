@@ -22,7 +22,7 @@ export default defineConfig({
     sidebar: [
       {
         text: 'Start here',
-        items: [{ text: 'Getting started', link: '/guide/getting-started' }]
+        items: [{ text: 'Getting started', link: '/guide/getting_started' }]
       }
     ],
 

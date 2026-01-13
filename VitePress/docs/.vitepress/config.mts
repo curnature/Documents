@@ -23,6 +23,13 @@ export default defineConfig({
       {
         text: 'Start here',
         items: [{ text: 'Getting started', link: '/guide/getting_started' }]
+      },
+
+      {
+        {text: 'Build an VPS server', link: '/vps_build/'}
+        items: [
+          {text: 'Users', link: '/vps_build/01_users'}
+        ]
       }
     ],
 

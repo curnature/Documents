@@ -8,3 +8,6 @@ This is a starter page.
 
 ```bash
 echo "hello"
+
+## Equations
+$g_{\mu \nu} = 1$

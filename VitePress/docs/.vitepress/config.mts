@@ -32,7 +32,8 @@ export default defineConfig({
           {text: 'Users', link: '/vps_build/01_users'},
           {text: 'Nginx', link: '/vps_build/02_nginx'},
           {text: 'Cert', link: '/vps_build/03_cert'},
-          {text: 'HTTPS', link: '/vps_build/04_https'}
+          {text: 'HTTPS', link: '/vps_build/04_https'},
+          {text: 'Xray', link: '/vps_build/05_xray'}
         ]
       }
     ],

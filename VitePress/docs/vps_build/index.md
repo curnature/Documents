@@ -4,7 +4,7 @@ Let's establish a step-by-step guide towards a personal VPS server that runs wit
 + Debian 12 + BBR
 + nginx TLS 1.3 + HTTP/2 on port 8443
 + Xray VLESS + REALITY + VISION on port 443
-+ port sharing with fallbacks
++ Fallbacks
 + Routing
 + Clients on PC and Android 
 
@@ -19,11 +19,11 @@ Special Thanks to [this tutorial](https://xtls.github.io/document/)! This note b
 + Get a domain (I use porkbun and get `www.curvature.blog`) and point DNA A record to the VPS IP
   - `DNS` - `Type A` - `Host: www.curvature.blog` - `Auswer: your server IP` - `TTL: 600(default)`
 + `SSH` login in your server
-+ update all the packages for the first time
++ Update all the packages for the first time. Don't forget 'y' when you see (y/n)
   ``` shell
   apt update
   apt upgrade
   ```
 ---
 
-Up to this point, we have a server, a domain, and we have upgrade all the packages.
+Up to this point, we are ready to explore what we can do.

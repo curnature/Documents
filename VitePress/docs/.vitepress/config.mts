@@ -29,7 +29,9 @@ export default defineConfig({
         text: 'Build an VPS server', 
         link: '/vps_build/', 
         items: [
-          {text: 'Users', link: '/vps_build/01_users'}
+          {text: 'Users', link: '/vps_build/01_users'},
+          {text: 'Nginx', link: '/vps_build/02_nginx'},
+          {text: 'Cert', link: '/vps_build/03_cert'}
         ]
       }
     ],

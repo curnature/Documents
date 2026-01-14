@@ -38,7 +38,9 @@ export default defineConfig({
           {text: 'Check BBR', link: '/vps_build/07_bbr'},
           {text: 'More on Xray - Routing', link: '/vps_build/08_routing'},
           {text: 'More on Xray - Fallbacks', link: '/vps_build/09_fallbacks'},
-          {text: 'Poor mans snapshots', link: '/vps_build/10_snapshot'}
+          {text: 'Poor mans snapshots', link: '/vps_build/10_snapshot'},
+          {text: 'Nginx config', link: '/vps_build/11_nginx_conf'},
+          {text: 'Xray config', link: '/vps_build/12_xray_conf'}
         ]
       }
     ],

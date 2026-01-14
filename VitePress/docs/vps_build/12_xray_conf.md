@@ -50,7 +50,7 @@
       "settings": {
         "clients": [
           {
-            "id": "a50401a4-dc01-4ad6-8add-26204978ab48",
+            "id": "your_id",
             "flow": "xtls-rprx-vision"
           }
         ],
@@ -64,22 +64,22 @@
           "dest": "127.0.0.1:8443",
           "xver": 0,
           "serverNames": [
-            "www.curvature.blog"
+            "your.domain.name"
           ],
-          "privateKey": "EOM_0M2Sw-MS36GXmb0uU3M9EC_LYApCNUskI7qfymc",
+          "privateKey": "your_private_key",
           "shortIds": [
-            "2113c642196d5046"
+            "your_short_ids"
           ]
         }
       },
       "fallbacks": [
         {
-                "name": "www.curvature.blog",
+                "name": "your.domain.name",
                 "alpn": "h2",
                 "dest": "127.0.0.1:8443"
         },
         {
-                "name": "www.curvature.blog",
+                "name": "your.domain.name",
                 "alpn": "http/1.1",
                 "dest": "127.0.0.1:8443"
         },

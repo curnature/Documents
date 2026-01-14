@@ -69,7 +69,7 @@ http {
         server {
                 listen 80;
                 listen [::]:80;
-                server_name www.curvature.blog;
+                server_name your.domain.name;
                 return 301 https://$host$request_uri;
         }
 
@@ -77,13 +77,13 @@ http {
                 listen 127.0.0.1:8443 ssl http2;
                 listen [::1]:8443 ssl http2;
 
-                server_name www.curvature.blog;
+                server_name your.domain.name;
 
                 root /var/www/html;
                 index index.nginx-debian.html index.html;
 
-                ssl_certificate     /etc/nginx/cert/www.curvature.blog.fullchain.cer;
-                ssl_certificate_key /etc/nginx/cert/www.curvature.blog.key;
+                ssl_certificate     /etc/nginx/cert/your.own.fullchain.cer;
+                ssl_certificate_key /etc/nginx/cert/your.own.key;
 
                 ssl_protocols TLSv1.3;
                 ssl_prefer_server_ciphers off;

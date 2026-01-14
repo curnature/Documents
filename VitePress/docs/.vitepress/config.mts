@@ -31,7 +31,8 @@ export default defineConfig({
         items: [
           {text: 'Users', link: '/vps_build/01_users'},
           {text: 'Nginx', link: '/vps_build/02_nginx'},
-          {text: 'Cert', link: '/vps_build/03_cert'}
+          {text: 'Cert', link: '/vps_build/03_cert'},
+          {text: 'HTTPS', link: '/vps_build/04_https'}
         ]
       }
     ],

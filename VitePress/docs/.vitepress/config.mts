@@ -8,6 +8,7 @@ export default defineConfig({
   description: 'My notes and docs',
 
   markdown: {
+    math: true,
     config: (md) => {
       md.use(mathjax3)
     }

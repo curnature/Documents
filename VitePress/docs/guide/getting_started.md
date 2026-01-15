@@ -9,5 +9,9 @@ This is a starter page.
 ```bash
 echo "hello"
 
-## Equations
-$g_{\mu \nu} = 1$
+## Equations (need some more plugins for LaTex style)
+Inline: $g_{\mu \nu}$
+
+$$
+g_{\mu \nu} = \mathrm{diag}(-1,1,1,1)
+$$

@@ -1,11 +1,11 @@
 ---
-title: Documents
+title: Curvature's Blog
 ---
 
-# Documents
+## Curvature's Blog
 
-Welcome!
+Welcome to my personal blog! Plan to put something in physics, math, and some technical notes.  
 
 ::: tip
-Put key highlights / takeaways in these callout blocks.
+[Markdown template](https://markdown-it.github.io/)
 :::

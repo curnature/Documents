@@ -10,7 +10,7 @@ This is a starter page.
 echo "hello"
 ```
 
-## Equations (need some more plugins for LaTex style)
+## Equations (LaTex Style works)
 Inline: $g_{\mu \nu}$
 
 $$

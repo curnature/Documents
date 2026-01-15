@@ -6,8 +6,9 @@ This is a starter page.
 
 ## Code
 
-```bash
+``` bash
 echo "hello"
+```
 
 ## Equations (need some more plugins for LaTex style)
 Inline: $g_{\mu \nu}$

@@ -25,7 +25,17 @@ export default defineConfig({
         text: 'Start here',
         items: [{ text: 'Getting started', link: '/guide/getting_started' }]
       },
-
+      
+      {
+        text: 'Physics',
+        link: '/physics/'
+      },
+      
+      {
+        text: 'Math',
+        link: '/math/'
+      },
+      
       {
         text: 'Build an VPS server', 
         link: '/vps_build/', 

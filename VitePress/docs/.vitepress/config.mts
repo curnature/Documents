@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 import mathjax3 from 'markdown-it-mathjax3'
 
 export default defineConfig({
-  base: '/Documents/',
+  base: '/',
 
   title: 'Documents',
   description: 'My notes and docs',

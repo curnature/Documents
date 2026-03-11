@@ -1,105 +1,102 @@
-## Enable BBR correctly (second run)
+## More on Xray - Routing and DNS
 
-In this section, we verify and enable TCP BBR on Debian 12.  
-Goal: confirm the kernel supports BBR and it is actually in use.
+In this section, we configure Xray's internal routing to control how outbound traffic is handled.
 
----
-
-## 7.1 Background: what went wrong before
-
-We previously tried a risky approach:
-
-+ adding an old backports source (e.g. `buster-backports`)
-+ installing a different kernel from that source
-+ rebooting
-
-Result:
-
-+ system behavior became unstable (SSH issues after reboot, port changed unexpectedly)
-+ conclusion: do **NOT** mix old Debian backports on Debian 12 just to get BBR
-
-So we switched to the correct approach:
-
-+ use Debian 12 kernel as-is
-+ verify whether BBR is already supported (it usually is)
+Goal: Block ads, restrict access to local LAN IP addresses for security, prevent connections to specific regions, and secure our DNS queries.
 
 ---
 
-## 7.2 Verify BBR is available
+## 8.1 The Concept of Routing and Outbounds
 
-We checked the current congestion control:
+Xray evaluates every connection passing through the proxy against a set of `rules` in the `routing` object. Depending on what rule is matched, the traffic is sent to a specific `outboundTag`.
 
-+ ``` shell
-  sudo sysctl net.ipv4.tcp_congestion_control
-  ```
-
-We also checked what algorithms are available:
-
-+ ``` shell
-  sudo sysctl net.ipv4.tcp_available_congestion_control
-  ```
-
-Expected output pattern:
-
-+ available includes `bbr`
-+ current is `bbr` (or you can switch to it)
+To make routing work, we must define at least two outbounds :
++ `direct` (protocol: `freedom`): This is the default exit to the normal internet.
++ `block` (protocol: `blackhole`): Any traffic sent here is instantly dropped.
 
 ---
 
-## 7.3 Common problem: `sysctl: command not found`
+## 8.2 Our Specific Routing Rules Explained
 
-We saw:
+Our setup uses three main blocking rules :
 
-+ `-bash: sysctl: command not found`
++ Block Private IPs (`geoip:private`)
+  - This blocks destinations like `10.0.0.0/8`, `172.16.0.0/12`, and `192.168.0.0/16`.
+  - Why: For a VPS proxy, this is a security measure. It prevents the proxy from being used to probe the server's internal local network. Note that while connected to the VPN, you won't be able to reach your home router's local web GUI through the tunnel.
++ Block specific regions (`geoip:cn`)
+  - Any destination whose IP falls within China's IP ranges is immediately blackholed.
+  - Why: If your goal is to strictly prevent traffic to/from CN servers while on the proxy, this rule enforces it. (Remove this rule if you ever want to access those sites through the VPS).
++ Block Ads and Trackers (`geosite:category-ads-all`)
+  - This uses Xray's built-in `geosite.dat` file to drop connections to known ad and tracker domains.
+  - Why: Less tracking and cleaner browsing. (Note: If a webpage breaks or only half-loads, it might be because this rule blocked a required tracking script).
 
-Cause:
-
-+ `sysctl` is located in `/usr/sbin/`, which is not always in a normal user's `PATH`
-+ also, we were running without sudo
-
-Fix:
-
-+ run with `sudo` (recommended)
-+ or use full path `/usr/sbin/sysctl`
-
-Also confirm `procps` is installed:
-
-+ ``` shell
-  sudo apt install procps
-  ```
+Any traffic that does not match these three block rules simply flows out via the default `direct` outbound.
 
 ---
 
-## 7.4 Enable BBR via sysctl config (if not already enabled)
+## 8.3 DNS Configuration (DoH)
 
-If BBR is available but not enabled by default, add these lines:
+To prevent the VPS's Internet Service Provider (ISP) from snooping on the domains you visit, we force Xray to resolve DNS queries securely using DNS-over-HTTPS (DoH).
++ We set the primary DNS server to Cloudflare's DoH: `https+local://1.1.1.1/dns-query`.
++ We use `localhost` as a fallback.
+---
 
-+ edit sysctl config
-+ ``` shell
-  sudo vim /etc/sysctl.conf
-  ```
+## 8.4 The Complete Routing JSON Snippet
 
-+ add:
-  ```
-  net.core.default_qdisc=fq
-  net.ipv4.tcp_congestion_control=bbr
-  ```
-
-Apply:
-
-+ ``` shell
-  sudo sysctl -p
-  ```
-
-Then re-check with section 7.2 commands.
+Here are the `dns`, `routing`, and `outbounds` objects that go into your `/usr/local/etc/xray/config.json` (placed alongside `log` and `inbounds`) :
+``` JSON
+  "dns": {
+    "servers": [
+      "https+local://1.1.1.1/dns-query",
+      "localhost"
+    ]
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:cn"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:category-ads-all"
+        ],
+        "outboundTag": "block"
+      }
+    ]
+  },
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {}
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole",
+      "settings": {}
+    }
+  ]
+```
 
 ---
 
-## 7.5 Quick checklist for this stage
+## 8.5 Quick checklist for this stage
 
-After finishing this section, you should have:
-
-+ Debian 12 kernel supports `bbr`
-+ `tcp_available_congestion_control` includes `bbr`
-+ `tcp_congestion_control` is set to `bbr`
-+ no risky backports kernel mixing
+After applying these blocks to your configuration:
++ Xray must securely resolve domains via `1.1.1.1` DoH.
++ Local network addresses (`192.168.x.x`, etc.) are blocked through the proxy.
++ Ads and trackers are blackholed.
++ `sudo systemctl restart xray` runs without syntax errors.

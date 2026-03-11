@@ -1,7 +1,9 @@
 ## Certificates with acme.sh (webroot) + permissions
 
 In this section, we obtain TLS certificates for `www.curvature.blog` using `acme.sh` and `webroot` mode.  
+
 Goal: we can issue a cert successfully, and install the cert/key to a stable path for nginx (e.g. `/etc/nginx/cert/`).  
+
 Key idea: `webroot` mode requires nginx web root to be writable (at least temporarily) so ACME challenge files can be created.
 
 ---
@@ -11,17 +13,17 @@ Key idea: `webroot` mode requires nginx web root to be writable (at least tempor
 We run `acme.sh` under our non-root user (e.g. `vpsadmin`).
 
 + install `acme.sh`
-+ ``` shell
+  ``` shell
   wget -O - https://get.acme.sh | sh
   ```
 
 + reload shell environment (so `acme.sh` command is available)
-+ ``` shell
-  . ~/.bashrc
+  ``` shell
+  source ~/.bashrc
   ```
 
 + (optional) upgrade acme.sh and enable auto-upgrade
-+ ``` shell
+  ``` shell
   acme.sh --upgrade --auto-upgrade
   ```
 
@@ -33,154 +35,110 @@ At some point, `acme.sh` may default to ZeroSSL and ask for account email / EAB 
 We switched to Let's Encrypt for simplicity.
 
 + set default CA to Let's Encrypt
-+ ``` shell
+  ``` shell
   acme.sh --set-default-ca --server letsencrypt
   ```
 
 ---
 
-## 3.3 Issue certificate using webroot mode
+## 3.3 Prepare Webroot Permissions (Crucial Step)
 
-Webroot mode works like this:
+If `/var/www/html` is owned by `root`, `acme.sh` (running as `vpsadmin`) will fail to create the `.well-known` challenge directory, resulting in a `Permission denied` error.
 
++ change ownership of webroot to allow `vpsadmin` to write
++ ensure nginx (`www-data`) can still read it by setting permissions to `755`
+  ``` shell
+  sudo chown -R vpsadmin:vpsadmin /var/www/html
+  sudo chmod -R 755 /var/www/html
+  ```
+
+---
+
+## 3.4 Issue certificate using webroot mode
+
+`webroot` mode works like this:
 + ACME server asks you to prove domain ownership
-+ `acme.sh` writes a challenge file into:
-  + `<webroot>/.well-known/acme-challenge/...`
-+ ACME server fetches that file from your domain via HTTP (port 80)
++ `acme.sh` writes a challenge file into `<webroot>/.well-known/acme-challenge/...`
++ ACME server fetches that file from your domain via HTTP (port 80).
 
-So this requires:
-
-+ `www.curvature.blog` must already point to your VPS IP
-+ nginx must already serve HTTP on port 80
-+ your webroot directory must be writable by the user running `acme.sh`
+This requires:
++ `www.curvature.blog` must already point to your VPS IP.
++ nginx must already serve HTTP on port 80.
 
 Issue the cert:
-
-+ ``` shell
-  acme.sh --issue \
-    -d www.curvature.blog \
-    --webroot /var/www/html
-  ```
-
-After success, the cert and key are stored under the acme.sh home directory, e.g.:
-
-+ `~/.acme.sh/www.curvature.blog_ecc/`
-  + `www.curvature.blog.key`
-  + `fullchain.cer`
-  + etc.
+``` shell
+acme.sh --issue \
+  -d www.curvature.blog \
+  --webroot /var/www/html
+```
+After success, the cert and key are temporarily stored under the acme.sh home directory (e.g., `~/.acme.sh/www.curvature.blog_ecc/`).
 
 ---
 
-## 3.4 Common problem: cannot write `.well-known` (permission denied)
+## 3.5 Prepare Cert Directory
 
-We encountered this:
-
-+ error example:
-  + cannot create directory `/var/www/html/.well-known`: Permission denied
-  + Cannot write token to file: `/var/www/html/.well-known/acme-challenge/...`
-
-Cause:
-
-+ `/var/www/html` is owned by root (or not writable by `vpsadmin`)
-+ but `acme.sh` is running as `vpsadmin`, so it cannot create the challenge files
-
-Fix (one working approach):
-
-+ temporarily change ownership of webroot to allow writing
-+ ``` shell
-  chown -R vpsadmin:vpsadmin /var/www/html
-  chmod -R 755 /var/www/html
+We want nginx to read certs from a stable system path: `/etc/nginx/cert/`
++ create the directory if missing
+  ``` shell
+  sudo mkdir -p /etc/nginx/cert
   ```
-
-After issuing cert successfully:
-
-+ (recommended) restrict permissions again (see section 3.7)
++ grant `vpsadmin` ownership of the directory so `acme.sh` can install files there (otherwise you will get `touch: cannot touch... Permission denied`).
+  ``` shell
+  sudo chown vpsadmin:vpsadmin /etc/nginx/cert
+  ```
 
 ---
 
-## 3.5 Install cert/key into nginx cert directory
-
-We want nginx to read certs from a stable system path, e.g.:
-
-+ `/etc/nginx/cert/`
-
-Create the directory if missing:
-
-+ ``` shell
-  mkdir -p /etc/nginx/cert
-  ```
-
-Then install cert and key:
-
-+ ``` shell
+## 3.6 Install cert/key and setup Auto-Renew
+Certificates renew automatically because `acme.sh` runs on a cron schedule. But nginx must be reloaded to pick up the updated cert files. We use `--reloadcmd` so that every renewal automatically reloads nginx.
++ install the cert and define the reload command:
+  ``` shell
   acme.sh --install-cert -d www.curvature.blog \
-    --key-file       /etc/nginx/cert/www.curvature.blog.key \
-    --fullchain-file /etc/nginx/cert/www.curvature.blog.fullchain.cer
+  --key-file       /etc/nginx/cert/www.curvature.blog.key \
+  --fullchain-file /etc/nginx/cert/www.curvature.blog.fullchain.cer \
+  --reloadcmd      "sudo systemctl reload nginx"
+  ```
+⚠️ Edge Case (Re-running the command): If you ever need to re-run this install command after you have locked down the file permissions (Step 3.8), acme.sh will fail with cp: cannot open ... for reading: Permission denied. To fix this, you must temporarily give vpsadmin ownership of the files before installing again:
+``` shell
+sudo chown vpsadmin:vpsadmin /etc/nginx/cert/www.curvature.blog.key /etc/nginx/cert/www.curvature.blog.fullchain.cer
+```
+
+---
+
+## 3.7 Allow passwordless nginx reload (Required for Cron)
+
+Because `--reloadcmd` runs automatically in the background via cron under the `vpsadmin` user, it cannot prompt for a `sudo` password. We must explicitly allow `vpsadmin` to reload nginx without a password.
++ edit the sudoers file
+  ``` shell
+  sudo visudo
+  ```
++ add this exact line to the bottom of the file:
+  ```
+  vpsadmin ALL=(root) NOPASSWD: /usr/bin/systemctl reload nginx
   ```
 
 ---
 
-## 3.6 Common problem: cannot write to `/etc/nginx/cert` (permission denied)
+# 3.8 Restrict permissions again (Crucial for Security)
 
-We hit this error:
+After issuing the cert and installing it to the nginx path, it is critical to restrict permissions so your private key isn't exposed.
 
-+ `touch: cannot touch '/etc/nginx/cert/...': Permission denied`
-
-Cause:
-
-+ `/etc/nginx/cert` is root-owned, but `acme.sh` is running as `vpsadmin`
-
-Fix options:
-
-+ option A (what we did): temporarily allow `vpsadmin` to write that directory
-  + ``` shell
-    chown vpsadmin:vpsadmin /etc/nginx/cert
-    ```
-  + then rerun `--install-cert`
-
-+ option B: run install step using root (not recommended unless you understand how acme.sh stores state)
-  + the safer approach is usually to keep acme.sh under one user and only allow file write via directory permission
-
----
-
-## 3.7 Auto-renew: reload nginx after renewal
-
-Certificates renew automatically (acme.sh runs on a schedule).  
-But nginx must be reloaded to pick up the updated cert files.
-
-We used `--reloadcmd` so that every renewal also reloads nginx:
-
-+ ``` shell
-  acme.sh --install-cert -d www.curvature.blog \
-    --key-file       /etc/nginx/cert/www.curvature.blog.key \
-    --fullchain-file /etc/nginx/cert/www.curvature.blog.fullchain.cer \
-    --reloadcmd      "sudo systemctl reload nginx"
+Our final goal: Let `vpsadmin` own the directory (so `acme.sh` can overwrite files on renewal), but lock down the files so only `root` (and Nginx) can read the private key.
++ apply the final security permissions:
+  ``` shell
+  sudo chown -R vpsadmin:vpsadmin /etc/nginx/cert
+  sudo chmod 700 /etc/nginx/cert
+  sudo chmod 600 /etc/nginx/cert/www.curvature.blog.key
+  sudo chmod 644 /etc/nginx/cert/www.curvature.blog.fullchain.cer
   ```
 
----
+--- 
 
-## 3.8 Restrict permissions again (recommended)
-
-After issuing cert and installing to nginx cert path, it is better to restrict permissions:
-
-+ webroot `/var/www/html` does not need to be owned by `vpsadmin` forever
-+ `/etc/nginx/cert` contains private key and should not be world-readable
-
-Typical goals:
-
-+ `/var/www/html` readable by nginx (and you), not world-writable
-+ `/etc/nginx/cert/*.key` readable only by root and nginx (or by root only)
-
-(Exact ownership/permission choices depend on whether nginx reads certs as root and drops privileges later, which is common.)
-
----
-
-## 3.9 Quick checklist for this stage
-
+# 3.9 Quick checklist for this stage
 After finishing this section, you should have:
-
-+ `acme.sh` installed and usable under `vpsadmin`
-+ a successfully issued certificate for `www.curvature.blog`
-+ cert/key installed under `/etc/nginx/cert/`
-+ an install step with `--reloadcmd` so renewals auto-reload nginx
-+ permissions tightened after the issuance process
++ `acme.sh` installed and configured for Let's Encrypt.
++ `webroot` permissions cleanly configured for ACME challenges.
++ A successfully issued certificate for `www.curvature.blog`
++ Cert/key installed securely under `/etc/nginx/cert/`
++ Passwordless `sudo` configured so `acme.sh` can automatically run `systemctl reload nginx` upon renewal
++ File and directory permissions strictly tightened.

@@ -1,97 +1,82 @@
 ## Enable BBR correctly (second run)
 
-In this section, we verify and enable TCP BBR on Debian 12.  
-Goal: confirm the kernel supports BBR and it is actually in use.
+In this section, we verify and enable TCP BBR (Bottleneck Bandwidth and Round-trip propagation time) on Debian 12.
 
+Goal: confirm the kernel supports BBR and it is actually in use to optimize proxy network speeds.
 ---
 
 ## 7.1 Background: what went wrong before
 
-We previously tried a risky approach:
+We previously tried a risky approach meant for older Debian versions:
 
-+ adding an old backports source (e.g. `buster-backports`)
-+ installing a different kernel from that source
-+ rebooting
++ adding an old backports source (`buster-backports`) to `/etc/apt/sources.list` .
++ installing a different kernel from that source.
++ rebooting.
 
 Result:
 
-+ system behavior became unstable (SSH issues after reboot, port changed unexpectedly)
-+ conclusion: do **NOT** mix old Debian backports on Debian 12 just to get BBR
++ system behavior became unstable; SSH broke, returning `Connection refused`, and the custom SSH port was unexpectedly wiped out and reset to 22 .
++ conclusion: do **NOT** mix old Debian backports on Debian 12 just to get BBR.
 
 So we switched to the correct approach:
-
-+ use Debian 12 kernel as-is
-+ verify whether BBR is already supported (it usually is)
++ use the Debian 12 kernel as-is. Debian 12's stock kernel already supports BBR natively.
 
 ---
 
 ## 7.2 Verify BBR is available
 
 We checked the current congestion control:
-
-+ ``` shell
-  sudo sysctl net.ipv4.tcp_congestion_control
-  ```
+``` shell
+sudo sysctl net.ipv4.tcp_congestion_control
+```
 
 We also checked what algorithms are available:
-
-+ ``` shell
-  sudo sysctl net.ipv4.tcp_available_congestion_control
-  ```
+``` shell
+sudo sysctl net.ipv4.tcp_available_congestion_control
+```
 
 Expected output pattern:
-
-+ available includes `bbr`
-+ current is `bbr` (or you can switch to it)
++ available includes `bbr` (e.g., `reno cubic bbr`).
++ current is `bbr` (or you can switch to it).
 
 ---
 
 ## 7.3 Common problem: `sysctl: command not found`
 
-We saw:
-
+When running the checks without `sudo`, we saw :
 + `-bash: sysctl: command not found`
 
 Cause:
-
-+ `sysctl` is located in `/usr/sbin/`, which is not always in a normal user's `PATH`
-+ also, we were running without sudo
++ `sysctl` is located in `/usr/sbin/`, which is usually not in a normal user's `$PATH` .
 
 Fix:
-
-+ run with `sudo` (recommended)
-+ or use full path `/usr/sbin/sysctl`
-
-Also confirm `procps` is installed:
-
-+ ``` shell
-  sudo apt install procps
++ run the command with `sudo`, which includes `/usr/sbin` in its path.
++ if the binary is truly missing, install the `procps` package :
+  ``` shell
+  sudo apt update
+  sudo apt install -y procps
   ```
 
 ---
 
-## 7.4 Enable BBR via sysctl config (if not already enabled)
+## 7.4 Enable BBR via sysctl config (The Modern Way)
 
-If BBR is available but not enabled by default, add these lines:
+Instead of editing the main `/etc/sysctl.conf` directly, it is best practice on modern Debian to drop a clean file into `/etc/sysctl.d/` .
 
-+ edit sysctl config
-+ ``` shell
-  sudo vim /etc/sysctl.conf
++ create the configuration file and add the BBR parameters :
+  ``` shell
+  echo "net.core.default_qdisc=fq" | sudo tee /etc/sysctl.d/99-bbr.conf
+  echo "net.ipv4.tcp_congestion_control=bbr" | sudo tee -a /etc/sysctl.d/99-bbr.conf
   ```
-
-+ add:
++ apply the settings without needing to reboot :
+  ``` shell
+  sudo sysctl --system
   ```
-  net.core.default_qdisc=fq
-  net.ipv4.tcp_congestion_control=bbr
++ verify BBR is loaded :
+  ``` shell
+  lsmod | grep bbr
   ```
-
-Apply:
-
-+ ``` shell
-  sudo sysctl -p
-  ```
-
-Then re-check with section 7.2 commands.
+  (Note: It usually loads automatically when first used, so don't worry if it doesn't show up immediately ).
 
 ---
 
@@ -99,7 +84,8 @@ Then re-check with section 7.2 commands.
 
 After finishing this section, you should have:
 
-+ Debian 12 kernel supports `bbr`
-+ `tcp_available_congestion_control` includes `bbr`
-+ `tcp_congestion_control` is set to `bbr`
-+ no risky backports kernel mixing
++ Verified that the stock Debian 12 kernel supports `bbr`.
++ Confirmed `tcp_available_congestion_control` includes `bbr`.
++ Confirmed `tcp_congestion_control` is actively set to `bbr`.
++ A dedicated `/etc/sysctl.d/99-bbr.conf` file ensuring BBR persists across reboots.
++ Avoided any risky backports or kernel mixing.

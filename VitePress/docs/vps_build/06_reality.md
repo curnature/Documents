@@ -1,95 +1,141 @@
 ## VLESS + REALITY + VISION working (first on non-443 port)
 
-In this section, we create a minimal Xray configuration for `VLESS + REALITY + VISION` and make it work first on a non-443 port (e.g. `4433`).  
+In this section, we create a minimal Xray configuration for `VLESS + REALITY + VISION` and make it work first on a non-443 port (e.g., `4433`).
+
 Goal: the client (Android V2rayNG) can connect, and the server `access.log` shows traffic.
 
 ---
 
-## 6.1 Decide the first test port
+## 6.1 Decide the first test port and open firewall
 
-Before sharing port 443 with nginx, we first tested Xray on a dedicated port:
+Before sharing port 443 with nginx, we first test Xray on a dedicated port to isolate any configuration issues .
 
 + pick a test port (example: `4433`)
-+ ensure this port is allowed in firewall / provider rules (if you use one)
-+ verify the service is listening after restart
++ ensure this port is allowed in your firewall:
+  ``` shell
+  sudo ufw allow 4433/tcp
+  ```
 
 ---
 
 ## 6.2 Generate REALITY keys (x25519)
 
-REALITY needs an x25519 key pair:
+REALITY requires an x25519 key pair. Note: Newer Xray versions use confusing terminology in their output .
 
-+ server uses `PrivateKey`
-+ client uses the printed `Password` as the `PublicKey` (naming is confusing)
-
-We used:
-
-+ ``` shell
++ generate the keys:
+  ``` shell
   /usr/local/bin/xray x25519
   ```
++ the output will look like this :
+  ``` shell
+  PrivateKey: EOM_0M2Sw-MS36GXmb0uU3M9EC_LYApCNUskI7qfymc
+  Password: BwtllsQkQMFpO8e6qZTlxqTarXN4WzzwS2X70zceRjo
+  Hash32: X7qELoC81uimK7b9_cKGUquKVp4vQaQNT54PSmcNR_8
+  ```
+Crucial Mapping:
 
-Output includes:
-
-+ `PrivateKey: ...`
-+ `Password: ...`
-+ `Hash32: ...`
-
-Important notes:
-
-+ `PrivateKey` goes into server config (`realitySettings.privateKey`)
-+ `Password` goes into client config as `publicKey`
-+ `Hash32` is optional (not required for basic setup)
++ `PrivateKey` goes into the server config (`realitySettings.privateKey`) .
++ `Password` is actually your Public Key. This goes into the client config as `PublicKey` .
++ `Hash32` is ignored (it is just for verification).
 
 ---
 
 ## 6.3 Prepare UUID and shortId
 
-VLESS requires a UUID for client identity:
+VLESS requires a UUID for client identity, and REALITY requires a `shortId`.
 
-+ generate a UUID (any standard method works)
-+ add it into:
-  + server: `settings.clients[].id`
-  + client: UUID field
-
-REALITY also needs a `shortId`:
-
-+ it is a short hex string (usually 8 or 16 bytes in hex)
-+ must match on server and client
-+ we used a 16-hex style shortId (example):
++ generate a UUID :
+  ``` shell
+  /usr/local/bin/xray uuid
   ```
-  2113c642196d5046
+  (Save this for both server and client configs).
++ generate a `shortId` (an 8-16 character hex string) :
+  ``` shell
+  openssl rand -hex 8
   ```
+  (Example output: 2113c642196d5046. Save this for both server and client configs).
 
 ---
 
-## 6.4 Minimal inbound structure (concept)
+## 6.4 The Minimal Inbound Configuration
 
-The inbound looks like:
+We will completely replace the default `/usr/local/etc/xray/config.json` with a clean configuration .
 
-+ protocol: `vless`
-+ port: `4433` (first test)
-+ stream security: `reality`
-+ flow: `xtls-rprx-vision`
-+ serverNames / SNI should be your domain (example: `www.curvature.blog`)
+Note: At this stage, `dest` points to `www.curvature.blog:443` because Nginx is still occupying port 443. We will change this later when we implement port-sharing .
 
-Key idea:
-
-+ REALITY tries to look like a real TLS connection to a normal site
-+ so we use a normal domain name as the “cover” (`serverNames`)
++ edit the config:
+  ``` shell
+  sudo vim /usr/local/etc/xray/config.json
+  ```
++ insert the following JSON, replacing the dummy values with your generated `UUID`, `PrivateKey`, and `shortId` :
+  ``` JSON
+  {
+    "log": {
+      "loglevel": "info",
+      "access": "/var/log/xray/access.log",
+      "error": "/var/log/xray/error.log"
+    },
+    "inbounds": [
+      {
+        "tag": "vless-reality-vision",
+        "listen": "0.0.0.0",
+        "port": 4433,
+        "protocol": "vless",
+        "settings": {
+          "clients": [
+            {
+              "id": "YOUR-UUID-HERE",
+              "flow": "xtls-rprx-vision"
+            }
+          ],
+          "decryption": "none"
+        },
+        "streamSettings": {
+          "network": "tcp",
+          "security": "reality",
+          "realitySettings": {
+            "show": false,
+            "dest": "www.curvature.blog:443",
+            "xver": 0,
+            "serverNames": [
+              "www.curvature.blog"
+            ],
+            "privateKey": "YOUR-REALITY-PRIVATE-KEY-HERE",
+            "shortIds": [
+              "YOUR-SHORT-ID-HERE"
+            ]
+          }
+        }
+      }
+    ],
+    "outbounds": [
+      {
+        "tag": "direct",
+        "protocol": "freedom",
+        "settings": {}
+      },
+      {
+        "tag": "blocked",
+        "protocol": "blackhole",
+        "settings": {}
+      }
+    ]
+  }
+  ```
 
 ---
 
 ## 6.5 Restart and confirm listening
 
-After editing `/usr/local/etc/xray/config.json`:
+After editing the configuration, apply it and verify.
 
-+ test config indirectly by restarting service
-+ ``` shell
++ restart service:
+  ``` shell
   sudo systemctl restart xray
+  sudo systemctl status xray
   ```
-
-+ confirm it is listening on the port
-+ ``` shell
++ confirm it is listening on port `4433` :
+  ``` shell
   sudo ss -tulpn | grep xray
   ```
 
@@ -97,73 +143,53 @@ After editing `/usr/local/etc/xray/config.json`:
 
 ## 6.6 Client setup (Android V2rayNG)
 
-On Android:
+On Android, create a new profile with the following parameters :
 
-+ create a new profile
-+ protocol: `VLESS`
-+ address: `www.curvature.blog`
-+ port: `4433` (first test port)
-+ UUID: same as server
+Basics: 
++ Type/Protocol: `VLESS`
++ Address/Host: `www.curvature.blog`
++ Port: `4433`
++ UUID: (must match server)
++ Encryption: none
++ Network/Transport: `tcp`
++ Flow: `xtls-rprx-vision`
 
-Transport / Reality fields:
-
-+ security: `reality`
-+ flow: `xtls-rprx-vision`
-+ SNI / serverName: `www.curvature.blog`
-+ publicKey: use `Password` from `xray x25519`
-+ shortId: must match server
-+ fingerprint: we used `chrome` (common choice)
+Security / REALITY section:
++ Security: `reality`
++ SNI / ServerName: `www.curvature.blog`
++ PublicKey: (Use the Password output from xray x25519)
++ ShortId: (must match server)
++ Fingerprint: `chrome` (or another common browser)
++ AllowInsecure: `false` or `off`
++ SpiderX: (leave empty or `/`)
++ Mux: `off` (keep off for simpler debugging)
 
 ---
 
-## 6.7 How we verified it works
+# 6.7 How we verified it works
 
-Server side:
+Server side :
 
-+ watch access log
-+ ``` shell
++ watch access log:
+  ``` shell
   sudo tail -f /var/log/xray/access.log
   ```
 
-Client side:
-
-+ V2rayNG connection test succeeds
-+ browser / app traffic works normally through VPN
-+ visiting an IP-check website shows the VPS IP
+Client side :
++ With V2rayNG turned ON (VPN key icon visible), visit an IP-check website (like `https://ifconfig.me`). It should show your VPS public IP, not your home/cellular IP.
++ As you browse, new lines should appear in the server's `access.log`.
 
 ---
 
 ## 6.8 Common problems we encountered (and fix)
 
-+ problem: V2rayNG shows error `io: read/write on closed pipe`
-  + common causes:
-    + client/server mismatch in REALITY parameters
-    + wrong port
-    + wrong `publicKey` / `shortId` / UUID
-    + wrong SNI / serverName
-  + fix:
-    + re-check **all** fields match:
-      + UUID (server + client)
-      + server `privateKey` vs client `publicKey` (Password)
-      + `shortId`
-      + `serverName` / SNI
-      + port
-    + watch server error log for hints
-
-+ problem: server `access.log` shows nothing
-  + cause:
-    + client never reached server (port blocked, DNS wrong, service not listening)
-    + handshake failed early (wrong keys / SNI)
-  + fix:
-    + confirm listening (`ss`)
-    + check provider firewall
-    + check `/var/log/xray/error.log`
-
-+ problem: DNS issues on client
-  + often a side-effect of the tunnel not being established correctly
-  + fix:
-    + solve the REALITY handshake first (keys/port/SNI)
-    + then DNS usually works automatically
++ Problem: V2rayNG shows error `io: read/write on closed pipe`, and browser shows "DNS problem" .
++ Accompanying Server Error: `/var/log/xray/error.log` shows `REALITY: processed invalid connection ... authentication failed or validation criteria not met` .
+  - Cause: The client reached the server on 4433, but the REALITY handshake failed due to a parameter mismatch .
+  - Fix: Strictly double-check that the `UUID`, `shortId`, and `serverName` match exactly. Ensure you put the `PrivateKey` on the server and the `Password` (PublicKey) on the client .
++ Problem: Server `access.log` shows nothing .
+  - Cause: Client never reached server (port blocked, DNS wrong, service not listening) or handshake failed instantly.
+  - Fix: Confirm listening with `ss -tuln`, check UFW firewall rules, and monitor `/var/log/xray/error.log` .
 
 ---
 
@@ -171,7 +197,8 @@ Client side:
 
 After finishing this section, you should have:
 
-+ Xray inbound running on a dedicated port (example: `4433`)
-+ Android V2rayNG connects successfully
-+ server `access.log` shows accepted connections
-+ browsing through VPN works and shows VPS IP
++ Xray inbound running actively on dedicated port `4433`.
++ A syntactically correct `config.json` with REALITY parameters filled out.
++ Android V2rayNG configured and connecting successfully.
++ Server `access.log` showing accepted connections.
++ Browsing through the VPN works and successfully masks your local IP.

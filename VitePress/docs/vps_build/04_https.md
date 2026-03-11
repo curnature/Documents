@@ -1,170 +1,112 @@
 ## nginx modern TLS settings (TLS 1.3 / HTTP2 / X25519)
 
 In this section, we switch nginx from HTTP to HTTPS using the certs from section 3.  
+
 Goal: `https://www.curvature.blog` works, and we confirm TLS 1.3 + HTTP/2 + X25519 are enabled.
 
 ---
 
 ## 4.1 Prepare cert paths
 
-Before editing nginx config, confirm you have these two files from `acme.sh --install-cert`:
+Before editing the nginx config, confirm your certs are sitting securely in the directory we created.
 
-+ private key
-  + `/etc/nginx/cert/www.curvature.blog.key`
-+ full chain certificate
-  + `/etc/nginx/cert/www.curvature.blog.fullchain.cer`
-
-(nginx will read these paths in the HTTPS server block.)
++ verify the files exist and have the correct permissions:
+  ``` shell
+  sudo ls -l /etc/nginx/cert/
+  ```
++ you should see:
+  - `/etc/nginx/cert/www.curvature.blog.key` (owned by root or vpsadmin, locked down)
+  - `/etc/nginx/cert/www.curvature.blog.fullchain.cer`
 
 ---
 
-## 4.2 Add HTTPS server block
+## 4.2 The Complete HTTPS Server Block
 
-We add a new server block listening on `443` with `ssl` + `http2`.
+Instead of piecing together the settings one by one, we will replace your existing HTTP server block in `/etc/nginx/nginx.conf` (inside the `http { ... }` block) with two new blocks: one to redirect HTTP to HTTPS, and one to serve the modern HTTPS site.
++ edit nginx main config:
+  ``` shell
+  sudo vim /etc/nginx/nginx.conf
+  ```
++ replace your port 80 server block with the following :
+  ``` nginx
+  server {
+    listen 80;
+    listen [::]:80;
+    server_name www.curvature.blog;
+    return 301 https://$host$request_uri;
+  }
 
-Key fields:
+  server {
+    listen 443 ssl http2;
+    listen [::1]:443 ssl http2;
+    server_name www.curvature.blog;
+    root /var/www/html;
+    index index.nginx-debian.html index.html;
 
-+ `listen 443 ssl http2;`
-+ `server_name www.curvature.blog;`
-+ `ssl_certificate` and `ssl_certificate_key`
-+ `ssl_protocols TLSv1.3;`
-+ prefer curve `X25519`
+    ssl_certificate /etc/nginx/cert/www.curvature.blog.fullchain.cer;
+    ssl_certificate_key /etc/nginx/cert/www.curvature.blog.key;
+
+    ssl_protocols TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_ecdh_curve X25519:secp256r1;
+
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+  }
+  ```
+Note: This block explicitly forces TLS 1.3, enables HTTP/2 on the listen line, and prioritizes the X25519 elliptic curve.
 
 ---
 
-## 4.3 Redirect HTTP to HTTPS (recommended)
+# 4.3 Common problem we encountered: `no cipher match`
 
-We usually keep a port 80 server block for redirect:
-
-+ HTTP (80) only does:
-  + redirect to HTTPS (443)
-  + or still serve `.well-known` for ACME if needed (webroot mode)
-
-After redirect is enabled:
-
-+ visiting `http://www.curvature.blog` should automatically jump to `https://www.curvature.blog`
+When initially setting this up, we hit a fatal error during the config test.
++ Error output:
+  ``` shell
+  SSL_CTX_set_cipher_list(...) failed (SSL error:0A0000B9:SSL routines::no cipher match)
+  ```
++ Cause:
+  We tried to manually specify modern TLS 1.3 cipher suite names (like `TLS_AES_256_GCM_SHA384`) inside the `ssl_ciphers` directive . The `ssl_ciphers` directive is only meant for `TLS 1.2` and below. Because we forced `TLSv1.3`, OpenSSL couldn't find a matching cipher it understood from that specific list .
++ Fix:
+  We completely removed (or commented out) the `ssl_ciphers` line. Nginx and OpenSSL will automatically use the optimal default ciphers for `TLS 1.3`.
 
 ---
 
-## 4.4 Enable TLS 1.3
+# 4.4 Test nginx config and reload
 
-To force TLS 1.3 only:
-
-+ set:
+Always test before restarting the service.
++ test syntax:
+  ``` shell
+  sudo nginx -t
   ```
-  ssl_protocols TLSv1.3;
-  ```
-
-If you want to allow older clients (not recommended), you can include TLS 1.2, but in our setup we preferred modern-only.
-
----
-
-## 4.5 Enable HTTP/2
-
-In nginx, HTTP/2 is enabled by `http2` on the listen line:
-
-+ example:
-  ```
-  listen 443 ssl http2;
-  ```
-
-(Modern nginx supports HTTP/2 over TLS automatically once enabled.)
-
----
-
-## 4.6 Prefer X25519
-
-We set the ECDH curve preference:
-
-+ example:
-  ```
-  ssl_ecdh_curve X25519:secp256r1;
-  ```
-
-This usually makes nginx prefer X25519 if the client supports it.
-
----
-
-## 4.7 Add HSTS header (optional but we enabled it)
-
-Once HTTPS is stable, enable HSTS:
-
-+ example:
-  ```
-  add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-  ```
-
-Note:
-
-+ do not enable HSTS too early (harder to debug if HTTPS is broken)
-+ `preload` is optional; only use it if you really want preload behavior
-
----
-
-## 4.8 Common problem we encountered: `no cipher match`
-
-We hit this error during `nginx -t`:
-
-+ `SSL_CTX_set_cipher_list(...) failed (SSL: ... no cipher match)`
-
-Cause:
-
-+ we tried to put TLS 1.3 cipher suite names into `ssl_ciphers`
-+ but `ssl_ciphers` controls TLS 1.2 and below, and TLS 1.3 ciphers are handled differently
-
-Fix:
-
-+ do not manually set TLS 1.3 cipher names in `ssl_ciphers`
-+ keep nginx/OpenSSL defaults for TLS 1.3 (recommended)
-+ if you need custom TLS 1.2 ciphers, only list TLS 1.2 ciphers there
-
-After removing/fixing the cipher settings:
-
-+ `nginx -t` succeeded
-+ nginx started normally
-
----
-
-## 4.9 Test nginx config and reload
-
-Always test before reload:
-
-+ ``` shell
-  nginx -t
-  ```
-
-Then reload:
-
-+ ``` shell
-  systemctl reload nginx
++ if it says `syntax is ok` and `test is successful`, safely reload:
+  ``` shell
+  sudo systemctl reload nginx
   ```
 
 ---
 
-## 4.10 Verify TLS 1.3 + HTTP/2 in practice
+# 4.5 Verify TLS 1.3 + HTTP/2 in practice
 
-We used `curl -v` to confirm:
-
-+ TLS version is TLS 1.3
-+ ALPN negotiated `h2` (HTTP/2)
-+ certificate matches `www.curvature.blog`
-
-Example test idea:
-
-+ from the server:
-  + connect to `https://www.curvature.blog`
-  + check output shows TLS 1.3 and `h2`
+We need to confirm the server is actually using the modern protocols we specified. We use `curl` in verbose mode as an "x-ray view" of the connection.
++ from your local machine (or the server), run:
+  ``` shell
+  curl -v https://www.curvature.blog
+  ```
++ look for these specific lines in the output to confirm success :
+  - `* SSL connection using TLSv1.3`
+  - `* ALPN, server accepted to use h2` (This confirms HTTP/2 is active)
 
 ---
 
-## 4.11 Quick checklist for this stage
+## 4.6 Quick checklist for this stage
 
 After finishing this section, you should have:
-
-+ `https://www.curvature.blog` works in browser
-+ nginx config passes `nginx -t`
-+ TLS 1.3 is enabled
-+ HTTP/2 is enabled
-+ X25519 is preferred
-+ HSTS is set (optional)
-+ you understand the cipher list pitfall and its fix
++ A global redirect from HTTP to HTTPS.
++ `https://www.curvature.blog` loading securely in your browser with a lock icon.
++ Nginx actively serving traffic using TLS 1.3 and HTTP/2.
++ A clean `sudo nginx -t` output.
++ A secure foundational web server ready to act as a decoy for Xray.

@@ -1,21 +1,22 @@
 ## nginx: HTTP site first, then HTTPS
 
 In this section, we install nginx, make sure a simple HTTP site works, and then upgrade it to HTTPS with TLS certs.  
+
 Goal: at the end, visiting `http://www.curvature.blog` works, and later `https://www.curvature.blog` works.
 
 ---
 
 ## 2.1 Install nginx and verify default page
 
-+ install nginx
-+ ``` shell
-  apt update
-  apt install nginx
++ login as `vpsadmin` and install nginx
+  ``` shell
+  sudo apt update
+  sudo apt install nginx
   ```
 
 + check nginx status
-+ ``` shell
-  systemctl status nginx
+  ``` shell
+  sudo systemctl status nginx
   ```
 
 + verify on browser
@@ -32,8 +33,8 @@ For a simple site, we use the default web root:
 + default index page (Debian) is `index.nginx-debian.html`
 
 + edit the index page to confirm you are serving your own content
-+ ``` shell
-  vim /var/www/html/index.nginx-debian.html
+  ``` shell
+  sudo vim /var/www/html/index.nginx-debian.html
   ```
 
 ---
@@ -45,29 +46,32 @@ We want nginx to respond correctly when browser uses your domain name (not just 
 There are multiple valid ways. In our notes, we directly added a server block (later we can move it into `sites-available`).
 
 + edit nginx main config (one working approach)
-+ ``` shell
-  vim /etc/nginx/nginx.conf
+  ``` shell
+  sudo vim /etc/nginx/nginx.conf
   ```
 
 + add a simple server block
-  + example:
-    ```nginx
+  ```nginx
+  http {
+    ...
     server {
-        listen 80;
-        server_name www.curvature.blog;
-        root /var/www/html;
-        index index.nginx-debian.html;
+      listen 80;
+      server_name www.curvature.blog;
+      root /var/www/html;
+      index index.nginx-debian.html;
     }
-    ```
+  ...
+  }
+  ```
 
 + test nginx config
-+ ``` shell
-  nginx -t
+  ``` shell
+  sudo nginx -t
   ```
 
 + reload nginx
-+ ``` shell
-  systemctl reload nginx
+  ``` shell
+  sudo systemctl reload nginx
   ```
 
 ---
@@ -82,9 +86,26 @@ At this stage:
 If IP works but domain does not:
 
 + check DNS A record points to the correct VPS IP
+    ``` bash
+    ping -c 3 www.curvature.blog
+    # The output IP should exactly match your VPS IP. If not, DNS hasn't propagated or is set incorrectly.
+    ```
 + check nginx `server_name` matches exactly (`www.curvature.blog`)
+    ``` bash
+    sudo nginx -T | grep server_name
+    # Ensure there are no typos in the domain name in your config.
+    ```
 + check port 80 is open (firewall / provider rules)
+    ``` bash
+    sudo ss -tuln | grep :80  # Checks if nginx is actively listening on port 80
+    sudo ufw status | grep 80 # Checks if your firewall allows traffic on port 80
+    ```
 + check nginx is actually loading the config you edited
+    ``` bash
+    sudo nginx -t
+    # If you want to see the entire configuration tree Nginx is currently using:
+    sudo nginx -T
+    ```
 
 ---
 
@@ -98,15 +119,15 @@ If IP works but domain does not:
     + re-run `nginx -t` until it is successful
     + then reload nginx
 
-+ problem: IP works but domain shows `refused to connect`
++ problem: IP works but domain shows `refused to connect` or `connection reset`
   + common causes:
     + DNS not propagated / wrong record
     + firewall / provider blocks port 80
-    + server_name mismatch
+    + **Browser caching / HSTS:** If your browser previously visited this domain via HTTPS, it will force a connection to port 443. Since Nginx is currently only on port 80, it refuses the connection.
   + fix:
     + confirm DNS points to VPS IP
-    + ensure port 80 is allowed
-    + ensure the correct server block is active
+    + test using `curl -v http://www.curvature.blog` on the server to bypass browser caching.
+    + test the domain in a fresh "Incognito/Private" browsing window.
 
 ---
 

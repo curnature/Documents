@@ -20,6 +20,18 @@ For security, we would like to login in `SSH` via a non-root user
   vpsadmin ALL=(ALL) NOPASSWD: ALL
   ```
 + save `Ctrl + o`and exit `Ctrl + x` (in nano)
++ ⚠️<span style="color: red;">Critical Security Risk</span>
+  To add `vpsadmin` to the `sudo` group in a safer way, I suggest
+  ``` shell
+  usermod -aG sudo vpsadmin
+  ```
+  This requires your password everytime, but the attacker won't instantly gain full `root` control of your server without needing a password.
++ verify the user has sudo access (optional) 
+  ``` shell
+  su - vpsadmin
+  sudo whoami
+  ```
+  It should prompt for your password and output "root"
 
 ---
 
@@ -48,3 +60,19 @@ For security, we would like to login in `SSH` via a non-root user
     ssh -p 3145 vpsadmin@YOUR_SERVER_IP
     ```
   - if it fails, do **not** logout from the old session (check firewall / provider rules first)
+
+---
+## Disable Root Login
+
++ open `/etc/ssh/sshd_config` via `vim`
+  ``` shell
+  vim /etc/ssh/sshd_config
+  ```
++ find `PermitRootLogin yes`, uncomment it (if necessary), and change it to `no` to disable direct root access
+  ```
+  PermitRootLogin no
+  ```
++ save and exit
+  ``` vim
+  :wq
+  ```

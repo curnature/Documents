@@ -15,6 +15,7 @@ Special Thanks to [this tutorial](https://xtls.github.io/document/)! This note b
 ## Provisioning and baseline hardening
 
 This section records what I usually do on a fresh Debian 12 VPS before installing any services (nginx / xray / etc.).  
+
 Goal: make sure the system is updated, we have a non-root admin user, and SSH is hardened (avoid easy probing).
 
 ---
@@ -36,16 +37,16 @@ Goal: make sure the system is updated, we have a non-root admin user, and SSH is
 
 + login to the VPS for the first time (usually as `root`)
 + update and upgrade packages
-+ ``` shell
+  ``` shell
   apt update
   apt upgrade -y
   ```
 + (optional) install some basic tools
-+ ``` shell
+  ``` shell
   apt install -y vim curl wget git unzip
   ```
 + (optional) reboot if kernel / libc was upgraded
-+ ``` shell
+  ``` shell
   reboot
   ```
 
@@ -66,7 +67,7 @@ This is described in `01_users.md`, but the idea is part of the baseline hardeni
 Goal: do not allow direct root login, and do not keep SSH on default port 22.
 
 + edit ssh config
-+ ``` shell
+  ``` shell
   vim /etc/ssh/sshd_config
   ```
 
@@ -94,13 +95,13 @@ Goal: do not allow direct root login, and do not keep SSH on default port 22.
     ```
 
 + restart ssh service
-+ ``` shell
+  ``` shell
   systemctl restart ssh
   ```
 
 + (important) do **NOT** close the current ssh session yet
   + open a new terminal on your local machine and test the new port first
-  + ``` shell
+    ``` shell
     ssh -p 3145 vpsadmin@YOUR_SERVER_IP
     ```
   + only close the old session after the new connection works

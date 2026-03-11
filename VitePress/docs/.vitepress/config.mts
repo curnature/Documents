@@ -50,8 +50,8 @@ export default defineConfig({
           {text: 'More on Xray - Routing', link: '/vps_build/08_routing'},
           {text: 'More on Xray - Fallbacks', link: '/vps_build/09_fallbacks'},
           {text: 'Poor mans snapshots', link: '/vps_build/10_snapshot'},
-          /* {text: 'Nginx config', link: '/vps_build/11_nginx_conf'},
-          {text: 'Xray config', link: '/vps_build/12_xray_conf'} */
+          {text: 'Nginx config', link: '/vps_build/11_vitepress_deploy'},
+          /* {text: 'Xray config', link: '/vps_build/12_xray_conf'} */
         ]
       }
     ],

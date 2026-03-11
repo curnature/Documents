@@ -1,21 +1,12 @@
-name: Deploy VitePress to GitHub Pages
+name: Deploy VitePress to VPS
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -37,23 +28,13 @@ jobs:
         working-directory: VitePress
         run: npm run docs:build
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          name: pages-${{ github.run_id }}
-          path: VitePress/docs/.vitepress/dist
-
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        with:
-          artifact_name: pages-${{ github.run_id }}
+      - name: Deploy to VPS via rsync
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
+          REMOTE_HOST: ${{ secrets.SERVER_IP }}
+          REMOTE_USER: ${{ secrets.SERVER_USER }}
+          REMOTE_PORT: ${{ secrets.SERVER_PORT }}
+          # The trailing slash on SOURCE is very important! It tells rsync to copy the contents, not the folder itself.
+          SOURCE: "VitePress/docs/.vitepress/dist/"
+          TARGET: "/var/www/html/"

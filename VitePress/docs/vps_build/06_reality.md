@@ -28,9 +28,9 @@ REALITY requires an x25519 key pair. Note: Newer Xray versions use confusing ter
   ```
 + the output will look like this :
   ``` shell
-  PrivateKey: EOM_0M2Sw-MS36GXmb0uU3M9EC_LYApCNUskI7qfymc
-  Password: BwtllsQkQMFpO8e6qZTlxqTarXN4WzzwS2X70zceRjo
-  Hash32: X7qELoC81uimK7b9_cKGUquKVp4vQaQNT54PSmcNR_8
+  PrivateKey: EOM_0M2Sw-YOUR_PRIVATE_KEY_LYApCNUskI7qfymc
+  Password: BwtllsQkQiYOURPASSWORD4WzzwS2X70zceRjo
+  Hash32: X7qELoC81uYOURHASH32vQaQNT54PSmcNR_8
   ```
 Crucial Mapping:
 
@@ -53,7 +53,7 @@ VLESS requires a UUID for client identity, and REALITY requires a `shortId`.
   ``` shell
   openssl rand -hex 8
   ```
-  (Example output: 2113c642196d5046. Save this for both server and client configs).
+  (Example output: 2113SHORTID046. Save this for both server and client configs).
 
 ---
 

@@ -98,7 +98,7 @@ Certificates renew automatically because `acme.sh` runs on a cron schedule. But 
   --fullchain-file /etc/nginx/cert/www.curvature.blog.fullchain.cer \
   --reloadcmd      "sudo systemctl reload nginx"
   ```
-⚠️ Edge Case (Re-running the command): If you ever need to re-run this install command after you have locked down the file permissions (Step 3.8), acme.sh will fail with cp: cannot open ... for reading: Permission denied. To fix this, you must temporarily give vpsadmin ownership of the files before installing again:
+⚠️ <span style="color: red;">Edge Case (Re-running the command)</span>: If you ever need to re-run this install command after you have locked down the file permissions (Step 3.8), acme.sh will fail with cp: cannot open ... for reading: Permission denied. To fix this, you must temporarily give vpsadmin ownership of the files before installing again:
 ``` shell
 sudo chown vpsadmin:vpsadmin /etc/nginx/cert/www.curvature.blog.key /etc/nginx/cert/www.curvature.blog.fullchain.cer
 ```

@@ -137,7 +137,7 @@ Edit your `/usr/local/etc/xray/config.json` so the `vless-reality-vision` inboun
       "settings": {
         "clients": [
           {
-            "id": "a50401a4-dc01-4ad6-8add-26204978ab48",
+            "id": "YOUR-UUID-HERE",
             "flow": "xtls-rprx-vision"
           }
         ],
@@ -153,9 +153,9 @@ Edit your `/usr/local/etc/xray/config.json` so the `vless-reality-vision` inboun
           "serverNames": [
             "www.curvature.blog"
           ],
-          "privateKey": "EOM_0M2Sw-MS36GXmb0uU3M9EC_LYApCNUskI7qfymc",
+          "privateKey": "YOUR-REALITY-PRIVATE-KEY-HERE",
           "shortIds": [
-            "2113c642196d5046"
+            "YOUR-SHORT-ID-HERE"
           ]
         }
       },

@@ -37,21 +37,21 @@ export default defineConfig({
       },
       
       {
-        text: 'Build an VPS server', 
+        text: '0. Build an VPS server', 
         link: '/vps_build/', 
         items: [
-          {text: 'Setup new users', link: '/vps_build/01_users'},
-          {text: 'Nginx 101', link: '/vps_build/02_nginx'},
-          {text: 'Get a certificate', link: '/vps_build/03_cert'},
-          {text: 'From HTTP to HTTPS', link: '/vps_build/04_https'},
-          {text: 'Xray 101', link: '/vps_build/05_xray'},
-          {text: 'More on Xray - Reality', link: '/vps_build/06_reality'},
-          {text: 'Check BBR', link: '/vps_build/07_bbr'},
-          {text: 'More on Xray - Routing', link: '/vps_build/08_routing'},
-          {text: 'More on Xray - Fallbacks', link: '/vps_build/09_fallbacks'},
-          {text: 'Poor mans snapshots', link: '/vps_build/10_snapshot'},
-          {text: 'Nginx config', link: '/vps_build/11_vitepress_deploy'},
-          /* {text: 'Xray config', link: '/vps_build/12_xray_conf'} */
+          {text: '1. Setup new users', link: '/vps_build/01_users'},
+          {text: '2. Nginx 101', link: '/vps_build/02_nginx'},
+          {text: '3. Get a certificate', link: '/vps_build/03_cert'},
+          {text: '4. From HTTP to HTTPS', link: '/vps_build/04_https'},
+          {text: '5. Xray 101', link: '/vps_build/05_xray'},
+          {text: '6. More on Xray - Reality', link: '/vps_build/06_reality'},
+          {text: '7. Check BBR', link: '/vps_build/07_bbr'},
+          {text: '8. More on Xray - Routing', link: '/vps_build/08_routing'},
+          {text: '9. More on Xray - Fallbacks', link: '/vps_build/09_fallbacks'},
+          {text: '10. Poor mans snapshots', link: '/vps_build/10_snapshot'},
+          {text: '11. Deploy VitePress websites on VPS', link: '/vps_build/11_vitepress_deploy'},
+          {text: '12. Scaling with Multiple Nodes (Pure Xray)', link: '/vps_build/12_scaling'}
         ]
       }
     ],

@@ -1,4 +1,4 @@
-## Create a non-root user
+## 1.1 Create a non-root user
 
 For security, we would like to login in `SSH` via a non-root user
 + ``` shell
@@ -35,7 +35,7 @@ For security, we would like to login in `SSH` via a non-root user
 
 ---
 
-## Switch SSH login port
+## 1.2 Switch SSH login port
 
 + ``` shell
   vim /etc/ssh/sshd_config
@@ -62,7 +62,7 @@ For security, we would like to login in `SSH` via a non-root user
   - if it fails, do **not** logout from the old session (check firewall / provider rules first)
 
 ---
-## Disable Root Login
+## 1.3 Disable Root Login
 
 + open `/etc/ssh/sshd_config` via `vim`
   ``` shell

@@ -20,7 +20,7 @@ Goal: make sure the system is updated, we have a non-root admin user, and SSH is
 
 ---
 
-## 1.1 Prepare before login
+## 0.1 Prepare before login
 
 + collect the following information from your VPS provider
   + public IP address of the VPS
@@ -33,7 +33,7 @@ Goal: make sure the system is updated, we have a non-root admin user, and SSH is
 
 ---
 
-## 1.2 First login and system update
+## 0.2 First login and system update
 
 + login to the VPS for the first time (usually as `root`)
 + update and upgrade packages
@@ -52,9 +52,9 @@ Goal: make sure the system is updated, we have a non-root admin user, and SSH is
 
 ---
 
-## 1.3 Create a non-root admin user
+## 0.3 Create a non-root admin user
 
-This is described in `01_users.md`, but the idea is part of the baseline hardening:
+This is described in `1. Setup new users`, but the idea is part of the baseline hardening:
 
 + create a non-root user (e.g. `vpsadmin`)
 + grant sudo privilege
@@ -62,7 +62,7 @@ This is described in `01_users.md`, but the idea is part of the baseline hardeni
 
 ---
 
-## 1.4 SSH hardening checklist
+## 0.4 SSH hardening checklist
 
 Goal: do not allow direct root login, and do not keep SSH on default port 22.
 
@@ -108,7 +108,7 @@ Goal: do not allow direct root login, and do not keep SSH on default port 22.
 
 ---
 
-## 1.5 Firewall / provider rule check
+## 0.5 Firewall / provider rule check
 
 This part depends on your VPS provider. The main idea:
 
@@ -128,7 +128,7 @@ This part depends on your VPS provider. The main idea:
 
 ---
 
-## 1.6 Common problems we encountered (and fix)
+## 0.6 Common problems we encountered (and fix)
 
 + problem: `ssh` shows `Connection refused` after reboot / config change
   + common causes:
@@ -153,7 +153,7 @@ This part depends on your VPS provider. The main idea:
 
 ---
 
-## 1.7 A quick final checklist for this stage
+## 0.7 A quick final checklist for this stage
 
 After finishing baseline hardening, make sure:
 

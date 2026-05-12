@@ -80,7 +80,35 @@ Instead of editing the main `/etc/sysctl.conf` directly, it is best practice on 
 
 ---
 
-## 7.5 Quick checklist for this stage
+## 7.5 Troubleshooting: BBR missing from available list
+
+When scaling to a new VPS provider, you might find that step 7.2 only returns `reno cubic` and BBR is completely missing.
+
+Cause: Unlike our primary server, this new provider compiled the `tcp_bbr` feature as a loadable module instead of baking it into the active kernel core. It simply hasn't been "woken up" yet.
+
+Fix (Load the module):
+
++ manually load the BBR module into the kernel:
+  ``` shell
+  sudo modprobe tcp_bbr
+  ```
++ ensure the module automatically loads every time the server reboots by adding it to the system modules list:
+  ``` shell
+  echo "tcp_bbr" | sudo tee -a /etc/modules-load.d/bbr.conf
+  ```
++ verify it is now available:
+  ``` shell
+  sudo sysctl net.ipv4.tcp_available_congestion_control
+  ```
+  (You should now see `reno cubic bbr`. You can proceed to Section 7.4 to enable it).
+
+Critical Virtualization Caveat:
+
+If running `modprobe tcp_bbr` returns a fatal error like `Module tcp_bbr not found` or `Operation not permitted`, the VPS provider is likely using OpenVZ or LXC container virtualization instead of KVM. In these environments, you share the host node's kernel and cannot modify core network modules. You must skip BBR entirely and run Xray on the standard `cubic` congestion control.
+
+---
+
+## 7.6 Quick checklist for this stage
 
 After finishing this section, you should have:
 

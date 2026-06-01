@@ -33,12 +33,17 @@ export default defineConfig({
       
       {
         text: 'Math',
-        link: '/math/'
+        link: '/math/',
+        collapsed: true,
+        items: [
+          {text: 'Arnold ODE CH1', link: '/math/arnold_ode_01'}
+        ]
       },
       
       {
-        text: '0. Build an VPS server', 
-        link: '/vps_build/', 
+        text: 'Build an VPS server', 
+        link: '/vps_build/',
+        collapsed: true,
         items: [
           {text: '1. Setup new users', link: '/vps_build/01_users'},
           {text: '2. Nginx 101', link: '/vps_build/02_nginx'},

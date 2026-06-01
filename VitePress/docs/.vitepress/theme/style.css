@@ -1,0 +1,55 @@
+/* Base style for all textbook boxes */
+.vp-doc .custom-block {
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border: none; /* Removes any default VitePress borders */
+}
+
+/* ---------------------------------------------------
+   INFO BOX (Blue) - Great for Definitions
+--------------------------------------------------- */
+.vp-doc .custom-block.info {
+  border-left: 4px solid var(--vp-c-brand-1);
+  background-color: var(--vp-c-bg-soft);
+}
+.vp-doc .custom-block.info .custom-block-title {
+  color: var(--vp-c-brand-1);
+  font-family: inherit;
+}
+
+/* ---------------------------------------------------
+   TIP BOX (Green) - Great for Examples
+--------------------------------------------------- */
+.vp-doc .custom-block.tip {
+  border-left: 4px solid var(--vp-c-success-1);
+  background-color: var(--vp-c-success-soft);
+}
+.vp-doc .custom-block.tip .custom-block-title {
+  color: var(--vp-c-success-1);
+  font-family: inherit;
+}
+
+/* ---------------------------------------------------
+   WARNING BOX (Yellow) - Great for Theorems/Proofs
+--------------------------------------------------- */
+.vp-doc .custom-block.warning {
+  border-left: 4px solid var(--vp-c-warning-1);
+  background-color: var(--vp-c-warning-soft);
+}
+.vp-doc .custom-block.warning .custom-block-title {
+  color: var(--vp-c-warning-1);
+  font-family: inherit;
+}
+
+/* ---------------------------------------------------
+   DANGER BOX (Red) - Great for Important Alerts
+--------------------------------------------------- */
+.vp-doc .custom-block.danger {
+  border-left: 4px solid var(--vp-c-danger-1);
+  background-color: var(--vp-c-danger-soft);
+}
+.vp-doc .custom-block.danger .custom-block-title {
+  color: var(--vp-c-danger-1);
+  font-family: inherit;
+}

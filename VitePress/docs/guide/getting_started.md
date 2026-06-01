@@ -56,3 +56,24 @@ $$
 \alpha,\beta,\gamma,\Gamma,\Lambda,\Omega,\qquad
 \dot\phi,\ \ddot\phi,\ \tilde g_{\mu\nu},\ \bar\rho
 $$
+
+
+## text boxes
+::: info Definition: Phase Space
+A phase space is the set of all possible states of a process or system at a specific time. For a mechanical system with $n$ degrees of freedom, the phase space is typically $2n$-dimensional, parameterized by coordinates and momenta $(q_i, p_i)$.
+:::
+
+::: tip Example: Simple Harmonic Oscillator
+For a simple 1D harmonic oscillator, the state is determined by its position $x$ and velocity $v$. The phase space is the 2D plane with coordinates $(x, v)$. The system's evolution is described by:
+$$ \frac{dx}{dt} = v, \quad \frac{dv}{dt} = -\omega^2 x $$
+The phase curves are ellipses centered at the origin.
+:::
+
+::: warning Theorem: Liouville's Theorem
+For a Hamiltonian system, the phase-space volume is preserved along the flow of the system. If $\rho(q, p, t)$ is the probability density function in phase space, then:
+$$ \frac{d\rho}{dt} = \frac{\partial \rho}{\partial t} + \sum_{i=1}^n \left( \frac{\partial \rho}{\partial q_i} \dot{q}_i + \frac{\partial \rho}{\partial p_i} \dot{p}_i \right) = 0 $$
+:::
+
+::: danger Important Remark: Singularities
+When analyzing phase flows, special care must be taken near equilibrium points where the vector field vanishes (i.e., $v(x) = 0$). Trajectories can take infinite time to reach these critical points.
+:::

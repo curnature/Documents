@@ -39,6 +39,15 @@ export default defineConfig({
           {text: 'Arnold ODE CH1', link: '/math/arnold_ode_01'}
         ]
       },
+
+      {
+        text: 'Notes',
+        link: '/reading/',
+        collapsed: true,
+        items: [
+          {text: '美国反对美国', link: '/reading/01_us_against_us'}
+        ]
+      },
       
       {
         text: 'Build an VPS server', 
